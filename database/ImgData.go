@@ -8,9 +8,15 @@ import (
 
 var dbLock sync.Mutex
 
-// 用來保存圖片連結
 type ImageDB struct {
-	Images map[string]string `json:"images"`
+	Images map[string]ImageData `json:"images"`
+}
+
+type ImageData struct {
+	URL      string `json:"url"`
+	Name     string `json:"name"`
+	ID       string `json:"id"`
+	Category string `json:"category"`
 }
 
 func LoadDatabase(filePath string) (*ImageDB, error) {
@@ -21,7 +27,7 @@ func LoadDatabase(filePath string) (*ImageDB, error) {
 	if err != nil {
 		if os.IsNotExist(err) {
 			// 預防萬一，如果文件不存在，創建一個空的數據庫
-			return &ImageDB{Images: make(map[string]string)}, nil
+			return &ImageDB{Images: make(map[string]ImageData)}, nil
 		}
 		return nil, err
 	}

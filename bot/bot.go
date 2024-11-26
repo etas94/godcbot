@@ -11,7 +11,7 @@ import (
 var BotId string
 var goBot *discordgo.Session
 
-const ImgDbFilePath = "./image_url.json"
+const ImgDbFilePath = "./image.json"
 
 // 初始化機器人並啟動
 func Start() {
@@ -144,7 +144,7 @@ func handleCommand(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			return
 		}
 
-		imageURL, found := db.Images[name]
+		imageData, found := db.Images[name]
 		if !found {
 			response := &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -163,7 +163,7 @@ func handleCommand(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		embed := &discordgo.MessageEmbed{
 			Title: fmt.Sprintf("圖片: %s", name),
 			Image: &discordgo.MessageEmbedImage{
-				URL: imageURL,
+				URL: imageData.URL,
 			},
 		}
 
@@ -189,7 +189,13 @@ func handleCommand(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			return
 		}
 
-		db.Images[name] = url
+		db.Images[name] = database.ImageData{
+			URL:      url,
+			Name:     name,
+			ID:       fmt.Sprintf("img_%s", name),
+			Category: "default",
+		}
+
 		err = database.SaveDatabase(ImgDbFilePath, db)
 		if err != nil {
 			fmt.Println("上傳圖片失敗:", err)
@@ -260,7 +266,7 @@ func handleCommand(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			return
 		}
 
-		imageURL, found := db.Images[name]
+		imageData, found := db.Images[name]
 		if !found {
 			response := &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -278,7 +284,7 @@ func handleCommand(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 		embed := &discordgo.MessageEmbed{
 			Image: &discordgo.MessageEmbedImage{
-				URL: imageURL,
+				URL: imageData.URL,
 			},
 		}
 
