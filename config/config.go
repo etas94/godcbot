@@ -7,8 +7,7 @@ import (
 )
 
 type Config struct {
-	Token     string `json:"token"`
-	BotPrefix string `json:"botPrefix"`
+	Token string `json:"token"`
 }
 
 func ReadConfig() (*Config, error) {

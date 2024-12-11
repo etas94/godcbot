@@ -9,7 +9,8 @@ import (
 var dbLock sync.Mutex
 
 type ImageDB struct {
-	Images map[string]ImageData `json:"images"`
+	Images     map[string]ImageData `json:"images"`
+	Categories map[string]string    `json:"categories"` // 儲存分類名稱與對應的編號
 }
 
 type ImageData struct {
