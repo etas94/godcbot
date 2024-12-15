@@ -207,9 +207,11 @@ func handleCommand(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		}
 
 		var imageData database.ImageData
-		found := false
+		var found bool
+
+		// 檢查輸入是否為 ID
 		for _, img := range db.Images {
-			if img.Name == identifier || img.ID == identifier {
+			if img.ID == identifier {
 				imageData = img
 				found = true
 				break
@@ -217,20 +219,49 @@ func handleCommand(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		}
 
 		if !found {
+			// 使用 SearchImageByName 函數進行搜尋
+			matchedID, err := database.SearchImageByName(db, identifier)
+			if err != nil || matchedID == "" {
+				response := &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData{
+						Content: fmt.Sprintf("找不到圖片 %q", identifier),
+						Flags:   discordgo.MessageFlagsEphemeral, // 僅使用者可見。
+					},
+				}
+				err = s.InteractionRespond(i.Interaction, response)
+				if err != nil {
+					fmt.Println("發送互動回應失敗:", err)
+				}
+				return
+			}
+
+			// 從 db.Images 中尋找對應的圖片資料
+			for _, img := range db.Images {
+				if img.ID == matchedID {
+					imageData = img
+					found = true
+					break
+				}
+			}
+		}
+
+		if !found { //找不到此ID
 			response := &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
 					Content: fmt.Sprintf("找不到圖片 %q", identifier),
-					Flags:   discordgo.MessageFlagsEphemeral, // 僅使用者可見。
+					Flags:   discordgo.MessageFlagsEphemeral,
 				},
 			}
-			err := s.InteractionRespond(i.Interaction, response)
+			err = s.InteractionRespond(i.Interaction, response)
 			if err != nil {
 				fmt.Println("發送互動回應失敗:", err)
 			}
 			return
 		}
 
+		// 建立圖片嵌入訊息
 		embed := &discordgo.MessageEmbed{
 			Title: fmt.Sprintf("圖片: %s", imageData.Name),
 			Image: &discordgo.MessageEmbedImage{
@@ -381,17 +412,18 @@ func handleCommand(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	case "send":
 		identifier := i.ApplicationCommandData().Options[0].StringValue()
-
 		db, err := database.LoadDatabase(ImgDbFilePath)
 		if err != nil {
-			fmt.Println("讀取圖庫失敗:", err)
+			fmt.Println("讀取圖片庫失敗:", err)
 			return
 		}
 
 		var imageData database.ImageData
-		found := false
+		var found bool
+
+		// 檢查輸入是否為 ID
 		for _, img := range db.Images {
-			if img.Name == identifier || img.ID == identifier {
+			if img.ID == identifier {
 				imageData = img
 				found = true
 				break
@@ -399,16 +431,44 @@ func handleCommand(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		}
 
 		if !found {
+			// 使用 SearchImageByName 函數進行搜尋
+			matchedID, err := database.SearchImageByName(db, identifier)
+			if err != nil || matchedID == "" { //找不到此名稱
+				response := &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData{
+						Content: fmt.Sprintf("找不到圖片 %q", identifier),
+						Flags:   discordgo.MessageFlagsEphemeral, // 僅使用者可見。
+					},
+				}
+				err = s.InteractionRespond(i.Interaction, response)
+				if err != nil {
+					fmt.Println("發送互動回應失敗:", err)
+				}
+				return
+			}
+
+			// 從 db.Images 中尋找對應的圖片資料
+			for _, img := range db.Images {
+				if img.ID == matchedID {
+					imageData = img
+					found = true
+					break
+				}
+			}
+		}
+
+		if !found { //找不到此ID
 			response := &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
 					Content: fmt.Sprintf("找不到圖片 %q", identifier),
-					Flags:   discordgo.MessageFlagsEphemeral, // 僅使用者可見。
+					Flags:   discordgo.MessageFlagsEphemeral,
 				},
 			}
-			err := s.InteractionRespond(i.Interaction, response)
+			err = s.InteractionRespond(i.Interaction, response)
 			if err != nil {
-				fmt.Println("發送回應失敗:", err)
+				fmt.Println("發送互動回應失敗:", err)
 			}
 			return
 		}
@@ -496,7 +556,7 @@ func handleCommand(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 		currentPage := 0
 		if len(i.ApplicationCommandData().Options) > 1 {
-			currentPage = int(i.ApplicationCommandData().Options[1].IntValue())
+			currentPage = int(i.ApplicationCommandData().Options[1].IntValue()) - 1 // 調整為零基索引
 		}
 
 		if currentPage < 0 || currentPage >= pages {
@@ -548,10 +608,13 @@ func handleCommand(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		}
 
 	case "listall":
-		// 初始化當前頁數，如果未提供則預設為第 0 頁
-		var currentPage int
+		// 初始化當前頁數，如果未提供則預設為第 1 頁
+		var currentPage int = 1
 		if len(i.ApplicationCommandData().Options) > 0 {
 			currentPage = int(i.ApplicationCommandData().Options[0].IntValue())
+			if currentPage < 1 {
+				currentPage = 1 // 確保頁數最小為 1
+			}
 		}
 
 		// 從資料庫加載圖片數據
@@ -577,7 +640,7 @@ func handleCommand(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		pages := (totalImages + 19) / 20
 
 		// 如果當前頁數超出範圍，返回錯誤消息
-		if currentPage < 0 || currentPage >= pages {
+		if currentPage > pages {
 			response := &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
@@ -593,7 +656,7 @@ func handleCommand(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		}
 
 		// 計算當前頁面的圖片範圍
-		start := currentPage * 20
+		start := (currentPage - 1) * 20
 		end := start + 20
 		if end > totalImages {
 			end = totalImages
@@ -628,7 +691,7 @@ func handleCommand(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		}
 
 		// 添加頁碼
-		content += fmt.Sprintf("\n第 %d/%d 頁", currentPage+1, pages)
+		content += fmt.Sprintf("\n第 %d/%d 頁", currentPage, pages)
 
 		// 發送響應
 		response := &discordgo.InteractionResponse{
