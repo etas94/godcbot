@@ -289,16 +289,16 @@ func handleCommand(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			return
 		}
 
-		if db.Categories == nil {
+		if db.Categories == nil { //初始化分類
 			db.Categories = make(map[string]string)
 		}
 
 		categoryID := db.Categories[category]
-		if categoryID == "" {
+		if categoryID == "" { //沒提供分類或無此分類
 			if category == "NULL" {
 				categoryID = "00"
 			} else {
-				categoryID = fmt.Sprintf("%02d", len(db.Categories))
+				categoryID = fmt.Sprintf("%02d", len(db.Categories)) //分類ID為2位數
 			}
 			db.Categories[category] = categoryID
 		}
@@ -503,7 +503,7 @@ func handleCommand(s *discordgo.Session, i *discordgo.InteractionCreate) {
 					break
 				}
 			}
-			if categoryCode == "" {
+			if categoryCode == "" { //無此分類
 				response := &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
 					Data: &discordgo.InteractionResponseData{
@@ -573,7 +573,7 @@ func handleCommand(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 		content := ""
 		if categoryFilter != "" {
-			content += fmt.Sprintf("%s:\n", categoryFilter)
+			content += fmt.Sprintf("%s:\n", categoryFilter) //列出分類名稱
 		}
 
 		for _, img := range filteredImages[start:end] {
@@ -717,7 +717,7 @@ func handleCommand(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			}
 		}
 
-		if imageToClassify == nil {
+		if imageToClassify == nil { //找不到圖片
 			response := &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
