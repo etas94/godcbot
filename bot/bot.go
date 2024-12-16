@@ -9,7 +9,6 @@ import (
 	"github.com/etas94/godcbot/database"
 )
 
-var BotId string
 var goBot *discordgo.Session
 
 const ImgDbFilePath = "./image.json"
@@ -28,14 +27,6 @@ func Start() {
 		fmt.Println("初始化Discord對話失敗:", err)
 		return
 	}
-
-	// 獲取機器人ID
-	u, err := goBot.User("@me")
-	if err != nil {
-		fmt.Println("獲取ID失敗:", err)
-		return
-	}
-	BotId = u.ID
 
 	// 註冊互動事件處理器來管理 Slash Command。
 	goBot.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
@@ -231,7 +222,7 @@ func handleCommand(s *discordgo.Session, i *discordgo.InteractionCreate) {
 				}
 				err = s.InteractionRespond(i.Interaction, response)
 				if err != nil {
-					fmt.Println("發送互動回應失敗:", err)
+					fmt.Println("發送回應失敗:", err)
 				}
 				return
 			}
@@ -256,7 +247,7 @@ func handleCommand(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			}
 			err = s.InteractionRespond(i.Interaction, response)
 			if err != nil {
-				fmt.Println("發送互動回應失敗:", err)
+				fmt.Println("發送回應失敗:", err)
 			}
 			return
 		}
@@ -286,7 +277,7 @@ func handleCommand(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		url := i.ApplicationCommandData().Options[1].StringValue()
 
 		var category string
-		if len(i.ApplicationCommandData().Options) > 2 {
+		if len(i.ApplicationCommandData().Options) > 2 { //有category參數
 			category = i.ApplicationCommandData().Options[2].StringValue()
 		} else {
 			category = "NULL"
@@ -443,7 +434,7 @@ func handleCommand(s *discordgo.Session, i *discordgo.InteractionCreate) {
 				}
 				err = s.InteractionRespond(i.Interaction, response)
 				if err != nil {
-					fmt.Println("發送互動回應失敗:", err)
+					fmt.Println("發送回應失敗:", err)
 				}
 				return
 			}
@@ -468,7 +459,7 @@ func handleCommand(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			}
 			err = s.InteractionRespond(i.Interaction, response)
 			if err != nil {
-				fmt.Println("發送互動回應失敗:", err)
+				fmt.Println("發送回應失敗:", err)
 			}
 			return
 		}
